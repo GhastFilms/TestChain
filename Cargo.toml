@@ -1,0 +1,10 @@
+[package]
+name = "TestChain"
+version = "0.0.1" 
+edition = '2018'
+authors = ["Trent <ghastfilms613@gmail.com>"]
+
+
+[dependencies]
+sha = "0.1"
+bigint = "0.1"
