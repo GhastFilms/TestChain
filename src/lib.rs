@@ -21,8 +21,10 @@ impl Block {
 }
 
 Struct BlockData {
-    
+    data: Vec<>,
 }
+
+
 
 
 struct UnminedBlockHeader {
