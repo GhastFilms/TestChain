@@ -5,5 +5,5 @@ edition = '2018'
 authors = ["Trent <ghastfilms613@gmail.com>"]
 
 [dependencies]
-sha = "1.0.3"
+ring = "0.16.5"
 bigint = "4.4.1"
