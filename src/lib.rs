@@ -1,11 +1,16 @@
-extern crate bigint;
 extern crate ring;
-use bigint::uint::U256;
+extern crate serde;
+extern crate serde_derive;
+extern crate bincode;
+
 use ring::digest::{digest, Algorithm, Context, Digest, SHA256};
 use std::{boxed::Box, io::Read};
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+
+
+use serde::{Serialize, Deserialize};
 
 struct Block {
     Data: BlockData,
@@ -46,7 +51,7 @@ struct MinedBlockHeader {
     time: u32,
 }
 
-pub fn merkle_root<T: Hash>(i: &Vec<T>) -> Result<u64, ()> {
+pub fn merkle_root<T: Serialize>(i: &Vec<T>) -> Result<Digest, ()> {
     if i.is_empty() {
         println!("no values provided");
         Err(())
@@ -56,20 +61,23 @@ pub fn merkle_root<T: Hash>(i: &Vec<T>) -> Result<u64, ()> {
     }
 }
 
-fn _merkle_root<T: Hash>(mut i: Vec<&T>) -> u64 {
+fn _merkle_root<T: Serialize>(mut i: Vec<&T>) -> Digest {
     if i.len() == 1 {
         calculate_hash(&i.get(0))
     } else {
-        let w: usize = (i.len() as f64 / 2.0).floor() as usize;
-        let snd: Vec<&T> = i.split_off(w);
-        let mut combined: _ = _merkle_root(i).to_string();
-        combined.push_str(&(_merkle_root(snd).to_string()));
-        calculate_hash(&combined)
+        let snd: Vec<&T> = i.split_off((i.len() as f64 / 2.0).floor() as usize);
+        let mut x = _merkle_root(i).as_ref().to_vec();
+        x.extend_from_slice(_merkle_root(snd).as_ref());
+        calculate_hash(&x)
     }
 }
 
-fn calculate_hash<T: Hash>(t: &T) -> u64 {
-    let mut s = DefaultHasher::new();
-    t.hash(&mut s);
-    s.finish()
+
+fn calculate_hash<T: Serialize>(t: &T) -> Digest {
+    let bytes = any_as_u8_slice(t);
+    digest(&SHA256, &bytes)
+}
+
+fn any_as_u8_slice<T: Sized + Serialize>(p: &T) -> Vec<u8> {
+    bincode::serialize(&p).unwrap()
 }
