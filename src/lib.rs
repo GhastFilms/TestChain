@@ -4,6 +4,9 @@ use bigint::uint::U256;
 use ring::digest::{digest, Algorithm, Context, Digest, SHA256};
 use std::{boxed::Box, io::Read};
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 struct Block {
     Data: BlockData,
     Header: UnminedBlockHeader,
@@ -43,31 +46,25 @@ struct MinedBlockHeader {
     time: u32,
 }
 
-pub fn merkel_root<T: Read + Clone>(
-    mut i: Vec<T>,
-    algorithm: &'static Algorithm,
-) -> Result<Digest, ()> {
+pub fn merkle_root<T: Hash + Clone>(mut i: Vec<T>) -> Result<u64, ()> {
     if i.is_empty() {
         println!("no values provided");
         return Err(());
     }
     if i.len() == 1 {
-        Ok(digest(
-            algorithm,
-            &i.get(0)
-                .unwrap()
-                .clone()
-                .bytes()
-                .fold(Vec::new(), |mut x, y| {
-                    x.push(y.unwrap());
-                    x
-                }),
-        ))
+        Ok(calculate_hash(&i.get(0)))
     } else {
         let w: usize = (i.len() as f64 / 2.0).floor() as usize;
         let snd: Vec<T> = i.split_off(w);
-        let mut combined_vec: _ = merkel_root(i, algorithm).unwrap().as_ref().to_vec();
-        combined_vec.extend_from_slice(merkel_root(snd, algorithm).unwrap().as_ref());
-        Ok(digest(algorithm, &combined_vec))
+        let mut combined: _ = merkle_root(i).unwrap().to_string();
+        combined.push_str(&(merkle_root(snd).unwrap().to_string()));
+        Ok(calculate_hash(&combined))
     }
+}
+
+
+fn calculate_hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
 }
