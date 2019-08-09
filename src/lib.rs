@@ -46,22 +46,27 @@ struct MinedBlockHeader {
     time: u32,
 }
 
-pub fn merkle_root<T: Hash + Clone>(mut i: Vec<T>) -> Result<u64, ()> {
+pub fn merkle_root<T: Hash>(i: &Vec<T>) -> Result<u64, ()> {
     if i.is_empty() {
         println!("no values provided");
-        return Err(());
-    }
-    if i.len() == 1 {
-        Ok(calculate_hash(&i.get(0)))
+        Err(())
     } else {
-        let w: usize = (i.len() as f64 / 2.0).floor() as usize;
-        let snd: Vec<T> = i.split_off(w);
-        let mut combined: _ = merkle_root(i).unwrap().to_string();
-        combined.push_str(&(merkle_root(snd).unwrap().to_string()));
-        Ok(calculate_hash(&combined))
+        let d: Vec<&T> = i.iter().collect();
+        Ok(_merkle_root(d))
     }
 }
 
+fn _merkle_root<T: Hash>(mut i: Vec<&T>) -> u64 {
+    if i.len() == 1 {
+        calculate_hash(&i.get(0))
+    } else {
+        let w: usize = (i.len() as f64 / 2.0).floor() as usize;
+        let snd: Vec<&T> = i.split_off(w);
+        let mut combined: _ = _merkle_root(i).to_string();
+        combined.push_str(&(_merkle_root(snd).to_string()));
+        calculate_hash(&combined)
+    }
+}
 
 fn calculate_hash<T: Hash>(t: &T) -> u64 {
     let mut s = DefaultHasher::new();
