@@ -56,8 +56,8 @@ pub fn merkle_root<T: Hash + Clone>(mut i: Vec<T>) -> Result<u64, ()> {
     } else {
         let w: usize = (i.len() as f64 / 2.0).floor() as usize;
         let snd: Vec<T> = i.split_off(w);
-        let mut combined: _ = merkel_root(i).unwrap().to_string();
-        combined.push_str(&(merkel_root(snd).unwrap().to_string()));
+        let mut combined: _ = merkle_root(i).unwrap().to_string();
+        combined.push_str(&(merkle_root(snd).unwrap().to_string()));
         Ok(calculate_hash(&combined))
     }
 }
