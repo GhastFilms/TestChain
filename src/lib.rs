@@ -1,16 +1,16 @@
+extern crate bincode;
 extern crate ring;
 extern crate serde;
 extern crate serde_derive;
-extern crate bincode;
 
-use ring::digest::{digest, Algorithm, Context, Digest, SHA256};
+use ring::digest::{digest, Digest, SHA256};
 use std::{boxed::Box, io::Read};
 
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use serde::{Deserialize, Serialize};
 
+struct Chain {
 
-use serde::{Serialize, Deserialize};
+}
 
 struct Block {
     Data: BlockData,
@@ -19,6 +19,7 @@ struct Block {
     MagicNum: u32,
     Size: u32,
 }
+
 /*
 impl Block {
     pub fn new() -> Self {
@@ -72,7 +73,6 @@ fn _merkle_root<T: Serialize>(mut i: Vec<&T>) -> Digest {
     }
 }
 
-
 fn calculate_hash<T: Serialize>(t: &T) -> Digest {
     let bytes = any_as_u8_slice(t);
     digest(&SHA256, &bytes)
@@ -80,4 +80,40 @@ fn calculate_hash<T: Serialize>(t: &T) -> Digest {
 
 fn any_as_u8_slice<T: Sized + Serialize>(p: &T) -> Vec<u8> {
     bincode::serialize(&p).unwrap()
+}
+
+mod merkle_test {
+    use super::merkle_root;
+    use ring::digest::Digest;
+    #[test]
+    fn merkle_root_test() {
+        let x = String::from("8710D98CBA52069F0115C5ED68782BD59B68A97E0FB261A418DE12F4A27E1F6");
+        let data = vec![
+            String::from("a"),
+            String::from("b"),
+            String::from("c"),
+            String::from("d"),
+        ];
+        assert_eq!(x, digest_as_hex(&merkle_root(&data).unwrap()));
+    }
+
+    #[test]
+    fn merkle_root_odd() {
+        let x = String::from("EF3344F647EE2557A5E995D7A6C762D3A63B828278FF9B3656EC20D82B9728");
+        let data = vec![
+            String::from("a"),
+            String::from("b"),
+            String::from("c"),
+            String::from("d"),
+            String::from("e"),
+        ];
+        assert_eq!(x, digest_as_hex(&merkle_root(&data).unwrap()));
+    }
+
+    fn digest_as_hex(i: &Digest) -> String {
+        i.as_ref().iter().fold(String::new(), |mut acc, x| {
+            acc.push_str(&format!("{:X}", x));
+            acc
+        })
+    }
 }
