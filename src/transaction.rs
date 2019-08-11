@@ -22,8 +22,8 @@ pub struct Transaction {
     tx_id: Digest,
     version: u32,
     sig: Signature,
-    inputs: TxInputContainer,
-    outputs: TxOutputContainer,
+    inputs: Vec<TxInput>,
+    outputs: Vec<TxOutput>,
     lock_time: u32,
 }
 
@@ -32,21 +32,16 @@ impl Transaction {
         hasher.update(self.tx_id.as_ref());
         hasher.update(&self.version.to_le_bytes());
         hasher.update(self.sig.as_ref());
-        &self.inputs.hash(hasher);
-        &self.outputs.hash(hasher);
-        hasher.update(&self.lock_time.to_le_bytes());
-    }
-}
-
-struct TxInputContainer {
-    inputs: Vec<TxInput>,
-}
-
-impl TxInputContainer {
-    pub fn hash(&self, hasher: &mut Context) {
+        
         for x in self.inputs.iter() {
             x.hash(hasher);
         }
+        
+        for x in self.outputs.iter() {
+            x.hash(hasher);
+        }
+
+        hasher.update(&self.lock_time.to_le_bytes());
     }
 }
 
@@ -59,18 +54,6 @@ impl TxInput {
     pub fn hash(&self, hasher: &mut Context) {
         hasher.update(self.from_hash.as_ref());
         hasher.update(&self.from_index.to_le_bytes());
-    }
-}
-
-pub struct TxOutputContainer {
-    outputs: Vec<TxOutput>,
-}
-
-impl TxOutputContainer {
-    pub fn hash(&self, hasher: &mut Context) {
-        for x in self.outputs.iter() {
-            x.hash(hasher);
-        }
     }
 }
 
