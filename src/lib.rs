@@ -1,63 +1,36 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 extern crate bincode;
 extern crate ring;
 extern crate serde;
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate serde_derive;
 
-use ring::digest::{digest, Digest, SHA256};
-use ring::signature::{
-    KeyPair,
-    EcdsaKeyPair
+use ring::{
+    digest::{digest, Digest, SHA256},
+    signature::{EcdsaKeyPair, KeyPair, Signature},
 };
-use std::{boxed::Box, io::Read};
-use std::rc::Rc;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
+pub mod transaction;
+use transaction::TransactionContainer;
 
 pub struct Block {
     header: BlockHeader,
     transactions: TransactionContainer,
-    Size: u32,
+    size: u32,
 }
 
+// u8s and u32s are hashes with .to_le_bytes()
 pub struct BlockHeader {
     version: u32,
     prev_hash: Digest,
     target: u32,
     merkle_root: Digest,
     time: u32,
-    nonce: Option<u64>,
-}
-
-
-pub struct TransactionContainer {
-    transactions: Vec<Transaction>,
-    transaction_count: u32,
-}
-
-impl TransactionContainer {
-    // transactions cant be removed, they are eternal.
-    pub fn add_transaction(&mut self, tx: Transaction) -> Result<(), ()> {
-        Err(()) // not implimented yet
-    }
-}
-
-pub struct Transaction {
-    tx_id: Digest,
-    version: u32,
-    sig: ring::signature::Signature, 
-    inputs: Vec<TxInput>,
-    outputs: Vec<TxOutput>,
-    lock_time: u32,
-}
-
-struct TxInput {
-    from_hash: Digest,
-    from_index: u32,
-}
-
-struct TxOutput {
-    value: u64,
-    to: <ring::signature::EcdsaKeyPair as ring::signature::KeyPair>::PublicKey, 
+    nonce: u64,
 }
 
 //TODO merkle root functions should be converted to a method of TransactionContainer
@@ -94,7 +67,7 @@ fn any_as_u8_slice<T: Sized + Serialize>(p: &T) -> Vec<u8> {
 }
 
 mod merkle_test {
-    use super::merkle_root;
+    //use super::merkle_root;
     use ring::digest::Digest;
     #[test]
     fn merkle_root_test() {
