@@ -1,56 +1,67 @@
 extern crate bincode;
 extern crate ring;
 extern crate serde;
-extern crate serde_derive;
+#[macro_use] extern crate serde_derive;
 
 use ring::digest::{digest, Digest, SHA256};
+use ring::signature::{
+    KeyPair,
+    EcdsaKeyPair
+};
 use std::{boxed::Box, io::Read};
-
+use std::rc::Rc;
 use serde::{Deserialize, Serialize};
 
-struct Chain {
 
-}
-
-struct Block {
-    Data: BlockData,
-    Header: UnminedBlockHeader,
-    TransactionCount: u32,
-    MagicNum: u32,
+pub struct Block {
+    header: BlockHeader,
+    transactions: TransactionContainer,
     Size: u32,
 }
 
-/*
-impl Block {
-    pub fn new() -> Self {
-        Block {
-
-            Data: vec!(String::new("block"), String::new("block"), String::new("block"), String::new("block"), String::new("block")),
-        }
-    }
-}
-*/
-
-struct BlockData {
-    data: Vec<Box<dyn Read>>,
-}
-
-struct UnminedBlockHeader {
-    //blockref: Box<&'a Block>,
-    version: u32,
-    prev_hash: Digest,
-    target: u32,
-    merkle_root: Option<Digest>,
-    time: u32,
-}
-
-struct MinedBlockHeader {
+pub struct BlockHeader {
     version: u32,
     prev_hash: Digest,
     target: u32,
     merkle_root: Digest,
     time: u32,
+    nonce: Option<u64>,
 }
+
+
+pub struct TransactionContainer {
+    transactions: Vec<Transaction>,
+    transaction_count: u32,
+}
+
+impl TransactionContainer {
+    // transactions cant be removed, they are eternal.
+    pub fn add_transaction(&mut self, tx: Transaction) -> Result<(), ()> {
+        Err(()) // not implimented yet
+    }
+}
+
+pub struct Transaction {
+    tx_id: Digest,
+    version: u32,
+    sig: ring::signature::Signature, 
+    inputs: Vec<TxInput>,
+    outputs: Vec<TxOutput>,
+    lock_time: u32,
+}
+
+struct TxInput {
+    from_hash: Digest,
+    from_index: u32,
+}
+
+struct TxOutput {
+    value: u64,
+    to: <ring::signature::EcdsaKeyPair as ring::signature::KeyPair>::PublicKey, 
+}
+
+//TODO merkle root functions should be converted to a method of TransactionContainer
+//TODO remove bincode
 
 pub fn merkle_root<T: Serialize>(i: &Vec<T>) -> Result<Digest, ()> {
     if i.is_empty() {
