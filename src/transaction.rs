@@ -8,7 +8,9 @@ use std::collections::HashMap;
 //the TransactionContainer enforces that to make sure that everything gets hashed and stored in the right order.
 
 /// TransactionContainer manages the hashing and verifying of transactions.
-/// It also manages the order
+/// 
+/// It also manages the order of the transactions
+/// Transactions are ordered from least to greatest based on their hash value
 pub struct TransactionContainer {
     transactions: HashMap<Digest, Transaction>,
     transactions_hashes: Vec<Digest>,
@@ -79,7 +81,7 @@ pub struct Transaction {
     sig: Signature,
     inputs: Vec<TxInput>,
     outputs: Vec<TxOutput>,
-    lock_time: u32,
+    lock_time: i64,
 }
 
 impl Transaction {
@@ -146,4 +148,44 @@ impl TxOutput {
         hasher.update(self.to.as_ref());
         hasher.update(&self.value.to_le_bytes());
     }
+}
+
+
+
+/// TransactionBuilder is used to build transactions
+/// 
+/// All inputs and outputs entered should be valid, transactions with double spent inputs will be rejected.
+pub struct TransactionBuilder {
+    tx_id: Option<Digest>,
+    version: u32,
+    sig: Option<Signature>,
+    inputs: Vec<TxInput>,
+    outputs: Vec<TxOutput>,
+    lock_time: Option<i64>,
+}
+
+impl TransactionBuilder {
+    pub fn new() -> TransactionBuilder {
+        TransactionBuilder {
+            tx_id: None,
+            version: 1,
+            sig: None,
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            lock_time: None,
+        }
+    }
+    pub fn sign(&mut self, key: EcdsaKeyPair) -> &mut Self {
+        self
+    }
+
+    pub fn build(&self) -> Result<Transaction, Error> {
+        Err(Error::Unsigned)
+    }
+}
+
+pub enum Error {
+    MissingInputs,
+    MissingOutpus,
+    Unsigned,
 }
