@@ -1,20 +1,50 @@
 use ring::digest::{digest, Digest, SHA256, Context};
-use ring::signature::{EcdsaKeyPair, KeyPair, Signature};
+use ring::signature::{EcdsaKeyPair, KeyPair, Signature, UnparsedPublicKey, ED25519};
+use ring::error::Unspecified;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 //to save on network usage transactions are ordered but least to greatest by their hash value
 //the TransactionContainer enforces that to make sure that everything gets hashed and stored in the right order.
+
+
+/// TransactionContainer manages the hashing and verifying of transactions.
+/// It also manages the order
 pub struct TransactionContainer {
     transactions: HashMap<Digest, Transaction>,
-    //transactions_hashes: Vec<Digest>,
+    transactions_hashes: Vec<Digest>,
     transaction_count: u32,
 }
 
 impl TransactionContainer {
     // transactions cant be removed, they are eternal.
-    pub fn add_transaction(&mut self, tx: Transaction) -> Result<(), ()> {
-        Err(()) // not implimented yet
+    fn insert(&mut self, tx: Transaction) {
+        //ignore if its a duplicate
+        //add to hashlist and hashmap
+    }
+
+    fn add_bulk(&mut self, txs: Vec<Transaction>) {
+        //check for duplicates, 
+        //sort
+        //insert values into hashlist
+        //insert values into
+        //add to transaction count
+    }
+
+    pub fn check_order(&mut self) -> bool {
+        // the default value is 0 because rustc complains about how prev might not be initialized, it will be over ridden when it starts
+        let mut prev: &[u8] = &[0]; 
+        for (i, x) in self.transactions_hashes.iter().enumerate() {
+            if i == 0 {
+                prev = x.as_ref();
+                break;
+            }
+            if x.as_ref() < prev {
+                return false;
+            }
+            prev = x.as_ref();
+        };
+        true
     }
 }
 
@@ -28,6 +58,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Gets the full hash of the transaction including signature.
     pub fn hash(&self, hasher: &mut Context) {
         hasher.update(self.tx_id.as_ref());
         hasher.update(&self.version.to_le_bytes());
@@ -41,6 +72,29 @@ impl Transaction {
             x.hash(hasher);
         }
 
+        hasher.update(&self.lock_time.to_le_bytes());
+    }
+    
+    pub fn verify(&self, key: <EcdsaKeyPair as KeyPair>::PublicKey) -> Result<(), Unspecified>{
+        let mut hasher = Context::new(&SHA256);
+        self.no_sig_hash(&mut hasher);
+        let digest = hasher.finish();
+
+        let pk = UnparsedPublicKey::new(&ED25519, key.as_ref());
+
+        pk.verify(digest.as_ref(), self.sig.as_ref())
+    }
+
+    /// Gets the 
+    pub fn no_sig_hash(&self, hasher: &mut Context) {
+        hasher.update(self.tx_id.as_ref());
+        hasher.update(&self.version.to_le_bytes());
+        for x in self.inputs.iter() {
+            x.hash(hasher);
+        }
+        for x in self.outputs.iter() {
+            x.hash(hasher);
+        }
         hasher.update(&self.lock_time.to_le_bytes());
     }
 }

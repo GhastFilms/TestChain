@@ -67,7 +67,7 @@ fn any_as_u8_slice<T: Sized + Serialize>(p: &T) -> Vec<u8> {
 }
 
 mod merkle_test {
-    //use super::merkle_root;
+    use super::merkle_root;
     use ring::digest::Digest;
     #[test]
     fn merkle_root_test() {
