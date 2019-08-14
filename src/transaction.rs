@@ -1,4 +1,5 @@
 use ring::digest::{digest, Context, Digest, SHA256};
+use ring::rand;
 use ring::error::Unspecified;
 use ring::signature::{EcdsaKeyPair, KeyPair, Signature, UnparsedPublicKey, ED25519};
 use serde::{Deserialize, Serialize};
@@ -53,7 +54,7 @@ impl TransactionContainer {
 
     pub fn merkle_root(&self) -> Result<Digest, ()> {
         let i = &self.transactions_hashes;
-        
+
         if i.is_empty() {
             println!("no values provided");
             Err(())
@@ -76,7 +77,6 @@ impl TransactionContainer {
 }
 
 pub struct Transaction {
-    tx_id: Digest,
     version: u32,
     sig: Signature,
     inputs: Vec<TxInput>,
@@ -87,7 +87,6 @@ pub struct Transaction {
 impl Transaction {
     /// Gets the full hash of the transaction including signature.
     pub fn hash(&self, hasher: &mut Context) {
-        hasher.update(self.tx_id.as_ref());
         hasher.update(&self.version.to_le_bytes());
         hasher.update(self.sig.as_ref());
 
@@ -114,7 +113,6 @@ impl Transaction {
 
     /// Gets the
     pub fn no_sig_hash(&self, hasher: &mut Context) {
-        hasher.update(self.tx_id.as_ref());
         hasher.update(&self.version.to_le_bytes());
         for x in self.inputs.iter() {
             x.hash(hasher);
@@ -126,6 +124,7 @@ impl Transaction {
     }
 }
 
+#[derive(Clone)]
 pub struct TxInput {
     from_hash: Digest,
     from_index: u32,
@@ -138,6 +137,7 @@ impl TxInput {
     }
 }
 
+#[derive(Clone)]
 pub struct TxOutput {
     value: u64,
     to: <EcdsaKeyPair as KeyPair>::PublicKey,
@@ -155,10 +155,11 @@ impl TxOutput {
 /// TransactionBuilder is used to build transactions
 /// 
 /// All inputs and outputs entered should be valid, transactions with double spent inputs will be rejected.
+ 
+
+
 pub struct TransactionBuilder {
-    tx_id: Option<Digest>,
     version: u32,
-    sig: Option<Signature>,
     inputs: Vec<TxInput>,
     outputs: Vec<TxOutput>,
     lock_time: Option<i64>,
@@ -167,20 +168,127 @@ pub struct TransactionBuilder {
 impl TransactionBuilder {
     pub fn new() -> TransactionBuilder {
         TransactionBuilder {
-            tx_id: None,
             version: 1,
-            sig: None,
             inputs: Vec::new(),
             outputs: Vec::new(),
             lock_time: None,
         }
     }
-    pub fn sign(&mut self, key: EcdsaKeyPair) -> &mut Self {
-        self
+
+    pub fn push_input(&mut self) {
+        
     }
 
-    pub fn build(&self) -> Result<Transaction, Error> {
-        Err(Error::Unsigned)
+    pub fn pop_input(&mut self) {
+    
+    }
+
+    pub fn push_output(&mut self) {
+    
+    }
+
+    pub fn pop_output(&mut self) {
+    
+    }
+    
+    /// sorts inputs and outputs
+    ///
+    /// currently uses bubble sort but may use another algorithm in the future
+    fn sort<T: Clone>(i: Vec<(Digest, T)>) -> Vec<(Digest, T)> {
+        
+        let mut input = i.clone();
+
+        let n = input.len();
+        for i in 0..n {
+            let mut swap_occured: bool = false;
+            for j in 0..n-i-1 {
+                if input[j].0.as_ref() > input[j+1].0.as_ref() {
+                    input.swap(j,j+1);
+                    swap_occured = true;
+                }
+            }
+            if !swap_occured {
+                break;
+            }
+        }
+        
+        input.to_vec()
+    }
+
+
+    pub fn sort_inputs(i: Vec<TxInput>) -> Vec<TxInput> {
+        let v:  Vec<(Digest, TxInput)> = i.into_iter().map(|x| {
+            let mut h = Context::new(&SHA256);
+            x.hash(&mut h);
+            let hash = h.finish();
+            
+            (hash, x)
+        }).collect();
+        TransactionBuilder::sort(v).into_iter().map(|x| {
+            x.1
+        }).collect()
+    }
+
+    pub fn sort_outputs(i: Vec<TxOutput>) -> Vec<TxOutput> {
+        let v:  Vec<(Digest, TxOutput)> = i.into_iter().map(|x| {
+            let mut h = Context::new(&SHA256);
+            x.hash(&mut h);
+            let hash = h.finish();
+
+            (hash, x)
+        }).collect();
+        TransactionBuilder::sort(v).into_iter().map(|x| {
+            x.1
+        }).collect()
+    }
+
+    pub fn sign(self, k: EcdsaKeyPair) -> Result<Transaction, Error> {
+        
+        let version = self.version;
+        let lock_time = chrono::Local::now().timestamp();
+
+        // these need to be checked and sorted
+        // input checks should verify if the signing key is valid for the inputs
+        let inputs = TransactionBuilder::sort_inputs(self.inputs);
+        let outputs = TransactionBuilder::sort_outputs(self.outputs);
+
+
+        // if any errors other than signing error occur they should have happened before this hash is created
+        let hash = {
+            let mut hasher = Context::new(&SHA256);
+            hasher.update(&version.to_le_bytes());
+
+            for x in inputs.iter() {
+                &x.hash(&mut hasher);
+            }
+
+            for x in outputs.iter() {
+                &x.hash(&mut hasher);
+            }
+
+            hasher.update(&lock_time.to_le_bytes());
+            
+            hasher.finish()
+        };
+
+        let rng = rand::SystemRandom::new();
+        let sig = match k.sign(&rng, hash.as_ref()) {
+            Ok(s) => {
+                s
+            },
+            Err(e) => {
+                return Err(Error::SigningError(e));
+            },
+        };
+
+        let r = Transaction {
+            version,
+            sig,
+            inputs,
+            outputs,
+            lock_time,
+        };
+        Ok(r)
     }
 }
 
@@ -188,4 +296,6 @@ pub enum Error {
     MissingInputs,
     MissingOutpus,
     Unsigned,
+    InvalidKeyPair,
+    SigningError(Unspecified),
 }
