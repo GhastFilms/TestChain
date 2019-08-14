@@ -17,6 +17,10 @@ use std::collections::HashMap;
 pub mod transaction;
 use transaction::TransactionContainer;
 
+const VERSION: u32 = 1; 
+
+
+
 pub struct Block {
     header: BlockHeader,
     transactions: TransactionContainer,

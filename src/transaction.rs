@@ -111,7 +111,7 @@ impl Transaction {
         pk.verify(digest.as_ref(), self.sig.as_ref())
     }
 
-    /// Gets the
+    /// Gets the hash
     pub fn no_sig_hash(&self, hasher: &mut Context) {
         hasher.update(&self.version.to_le_bytes());
         for x in self.inputs.iter() {
@@ -152,12 +152,12 @@ impl TxOutput {
 
 
 
+
+
 /// TransactionBuilder is used to build transactions
 /// 
 /// All inputs and outputs entered should be valid, transactions with double spent inputs will be rejected.
- 
-
-
+///
 pub struct TransactionBuilder {
     version: u32,
     inputs: Vec<TxInput>,
@@ -165,32 +165,85 @@ pub struct TransactionBuilder {
     lock_time: Option<i64>,
 }
 
+fn input_compare(fst: &TxInput, snd: &TxInput) -> bool {
+    let fst_hash = {
+        let mut h = Context::new(&SHA256);
+        fst.hash(&mut h);
+        h.finish()
+    };
+            
+    let snd_hash = {
+        let mut h = Context::new(&SHA256);
+        snd.hash(&mut h);
+        h.finish()
+    };
+
+    fst_hash.as_ref() == snd_hash.as_ref()
+}
+
+
+fn output_compare(fst: &TxOutput, snd: &TxOutput) -> bool {
+    let fst_hash = {
+        let mut h = Context::new(&SHA256);
+        fst.hash(&mut h);
+        h.finish()
+    };
+            
+    let snd_hash = {
+        let mut h = Context::new(&SHA256);
+        snd.hash(&mut h);
+        h.finish()
+    };
+
+    fst_hash.as_ref() == snd_hash.as_ref()
+}
+
+
+
+// inputs handling functions
 impl TransactionBuilder {
-    pub fn new() -> TransactionBuilder {
-        TransactionBuilder {
-            version: 1,
-            inputs: Vec::new(),
-            outputs: Vec::new(),
-            lock_time: None,
+    pub fn push_input(&mut self, i: TxInput) {
+        // ignores duplicate inputs
+        for x in &self.inputs {
+            if input_compare(&i, &x) {
+                return;
+            }
         }
+        self.inputs.push(i);
     }
 
-    pub fn push_input(&mut self) {
-        
+    pub fn get_inputs(&self) -> Vec<TxInput> {
+        self.inputs.clone()
     }
 
     pub fn pop_input(&mut self) {
-    
+        self.inputs.pop();
+    }
+}
+
+//output handling functions
+impl TransactionBuilder {
+    pub fn push_output(&mut self, i: TxOutput) {
+        for x in &self.outputs {
+            if output_compare(&i, &x) {
+                return;
+            }
+        }
+        self.outputs.push(i);
     }
 
-    pub fn push_output(&mut self) {
-    
+    pub fn get_outputs(&self) -> Vec<TxOutput> {
+        self.outputs.clone()
     }
 
     pub fn pop_output(&mut self) {
-    
+        self.outputs.pop();
     }
-    
+}
+
+
+// sorting functions
+impl TransactionBuilder {
     /// sorts inputs and outputs
     ///
     /// currently uses bubble sort but may use another algorithm in the future
@@ -240,6 +293,19 @@ impl TransactionBuilder {
         TransactionBuilder::sort(v).into_iter().map(|x| {
             x.1
         }).collect()
+    }
+}
+
+
+// starting and signing
+impl TransactionBuilder {
+    pub fn new() -> TransactionBuilder {
+        TransactionBuilder {
+            version: 1,
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            lock_time: None,
+        }
     }
 
     pub fn sign(self, k: EcdsaKeyPair) -> Result<Transaction, Error> {
