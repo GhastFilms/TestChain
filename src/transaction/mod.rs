@@ -19,7 +19,6 @@ pub struct TransactionContainer {
 }
 
 impl TransactionContainer {
-
     // transactions cant be removed, they are eternal.
     fn insert(&mut self, tx: Transaction) {
         //ignore if its a duplicate
@@ -149,10 +148,6 @@ impl TxOutput {
         hasher.update(&self.value.to_le_bytes());
     }
 }
-
-
-
-
 
 /// TransactionBuilder is used to build transactions
 /// 
