@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::{Input, Output};
 
+#[derive(Clone)]
 pub struct Transaction {
     pub version: u32,
     pub sig: Signature,
