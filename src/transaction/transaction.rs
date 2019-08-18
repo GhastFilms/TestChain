@@ -5,6 +5,7 @@ use ring::rand;
 
 use super::{Input, Output};
 
+#[derive(Clone)]
 pub struct Transaction {
     pub version: u32,
     pub sig: Signature,
