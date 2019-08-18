@@ -14,7 +14,6 @@ const VERSION: u32 = 1;
 pub struct Block {
     pub header: BlockHeader,
     pub transactions: TransactionContainer,
-    pub size: u32,
 }
 
 // u8s and u32s are hashes with .to_le_bytes()
@@ -26,8 +25,8 @@ pub struct BlockHeader {
     pub prev_hash: Digest,
     pub target: Vec<u8>,
     pub merkle_root: Digest,
-    pub time: u32,
-    pub nonce: Option<u64>,
+    pub time: u64,
+    pub nonce: u64,
 }
 
 impl BlockHeader {
@@ -39,7 +38,6 @@ impl BlockHeader {
             h.update(&self.time.to_le_bytes());
     }
 }
-
 
 pub fn pow(b: &mut Block) {
     let mut d: Digest;
@@ -62,6 +60,57 @@ pub fn pow(b: &mut Block) {
     } {};
 
     if d.as_ref() <= &target {
-        b.header.nonce = Some(nonce);       
+        b.header.nonce = nonce;       
     }
 }
+
+struct PartialBlock {
+    pub header: Option<BlockHeader>,
+    pub transactions: TransactionContainer,
+}
+
+impl PartialBlock {
+    pub fn new() -> PartialBlock {
+        PartialBlock {
+            header: None,
+            transactions: TransactionContainer::new(),
+        }
+    }
+}
+
+struct PartialBlockHeader {
+    pub version: u32,
+    pub prev_hash: Digest,
+    pub target: Vec<u8>,
+    pub merkle_root: Digest,
+    pub time: u64,
+    pub nonce: Option<u64>,
+}
+
+const TARGET: [u8; 32] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+use std::time::{SystemTime, UNIX_EPOCH};
+
+
+impl PartialBlockHeader {
+    pub fn new(prev_hash: Digest, target: &[u8], merkle_root: Digest) -> PartialBlockHeader {
+        PartialBlockHeader {
+            time: {
+                let s = SystemTime::now(); 
+                s.duration_since(UNIX_EPOCH).unwrap().as_secs() 
+            },
+            version: VERSION, 
+            target: target.to_vec(),
+            nonce: None,
+            prev_hash,
+            merkle_root,
+        }
+    }
+
+    pub fn 
+
+
+
+}
+
+
