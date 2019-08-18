@@ -3,16 +3,13 @@ use ring::signature::{Signature, KeyPair, EcdsaKeyPair, UnparsedPublicKey, ED255
 use ring::error::Unspecified;
 use ring::rand;
 
-use super::{TxInput, TxOutput};
-
-
-
+use super::{Input, Output};
 
 pub struct Transaction {
     pub version: u32,
     pub sig: Signature,
-    pub inputs: Vec<TxInput>,
-    pub outputs: Vec<TxOutput>,
+    pub inputs: Vec<Input>,
+    pub outputs: Vec<Output>,
     pub lock_time: i64,
 }
 
@@ -63,12 +60,12 @@ impl Transaction {
 ///
 pub struct TransactionBuilder {
     version: u32,
-    inputs: Vec<TxInput>,
-    outputs: Vec<TxOutput>,
+    inputs: Vec<Input>,
+    outputs: Vec<Output>,
     lock_time: Option<i64>,
 }
 
-fn input_compare(fst: &TxInput, snd: &TxInput) -> bool {
+fn input_compare(fst: &Input, snd: &Input) -> bool {
     let fst_hash = {
         let mut h = Context::new(&SHA256);
         fst.hash(&mut h);
@@ -85,7 +82,7 @@ fn input_compare(fst: &TxInput, snd: &TxInput) -> bool {
 }
 
 
-fn output_compare(fst: &TxOutput, snd: &TxOutput) -> bool {
+fn output_compare(fst: &Output, snd: &Output) -> bool {
     let fst_hash = {
         let mut h = Context::new(&SHA256);
         fst.hash(&mut h);
@@ -100,14 +97,10 @@ fn output_compare(fst: &TxOutput, snd: &TxOutput) -> bool {
 
     fst_hash.as_ref() == snd_hash.as_ref()
 }
-
-
-
-
 
 // inputs handling functions
 impl TransactionBuilder {
-    pub fn push_input(&mut self, i: TxInput) {
+    pub fn push_input(&mut self, i: Input) {
         // ignores duplicate inputs
         for x in &self.inputs {
             if input_compare(&i, &x) {
@@ -117,7 +110,7 @@ impl TransactionBuilder {
         self.inputs.push(i);
     }
 
-    pub fn get_inputs(&self) -> Vec<TxInput> {
+    pub fn get_inputs(&self) -> Vec<Input> {
         self.inputs.clone()
     }
 
@@ -128,7 +121,7 @@ impl TransactionBuilder {
 
 //output handling functions
 impl TransactionBuilder {
-    pub fn push_output(&mut self, i: TxOutput) {
+    pub fn push_output(&mut self, i: Output) {
         for x in &self.outputs {
             if output_compare(&i, &x) {
                 return;
@@ -137,7 +130,7 @@ impl TransactionBuilder {
         self.outputs.push(i);
     }
 
-    pub fn get_outputs(&self) -> Vec<TxOutput> {
+    pub fn get_outputs(&self) -> Vec<Output> {
         self.outputs.clone()
     }
 
@@ -174,8 +167,8 @@ impl TransactionBuilder {
     }
 
 
-    pub fn sort_inputs(i: Vec<TxInput>) -> Vec<TxInput> {
-        let v:  Vec<(Digest, TxInput)> = i.into_iter().map(|x| {
+    pub fn sort_inputs(i: Vec<Input>) -> Vec<Input> {
+        let v:  Vec<(Digest, Input)> = i.into_iter().map(|x| {
             let mut h = Context::new(&SHA256);
             x.hash(&mut h);
             let hash = h.finish();
@@ -187,8 +180,8 @@ impl TransactionBuilder {
         }).collect()
     }
 
-    pub fn sort_outputs(i: Vec<TxOutput>) -> Vec<TxOutput> {
-        let v:  Vec<(Digest, TxOutput)> = i.into_iter().map(|x| {
+    pub fn sort_outputs(i: Vec<Output>) -> Vec<Output> {
+        let v:  Vec<(Digest, Output)> = i.into_iter().map(|x| {
             let mut h = Context::new(&SHA256);
             x.hash(&mut h);
             let hash = h.finish();

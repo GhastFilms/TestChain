@@ -1,11 +1,7 @@
 use super::Transaction;
 
-
 use std::collections::HashMap;
 use ring::digest::{Digest, digest, SHA256, Context};
-
-
-
 //to save on network usage transactions are ordered but least to greatest by their hash value
 //the TransactionContainer enforces that to make sure that everything gets hashed and stored in the right order.
 
