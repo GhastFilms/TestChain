@@ -1,11 +1,8 @@
 #![allow(dead_code)]
-
 extern crate ring;
-//#[macro_use]
-//extern crate serde_derive;
 
 use ring::{
-    digest::Digest,
+    digest::Digest, digest::Context, digest::SHA256
 };
 
 pub mod transaction;
@@ -14,19 +11,57 @@ use transaction::TransactionContainer;
 
 const VERSION: u32 = 1;
 
-
 pub struct Block {
-    header: BlockHeader,
-    transactions: TransactionContainer,
-    size: u32,
+    pub header: BlockHeader,
+    pub transactions: TransactionContainer,
+    pub size: u32,
 }
 
 // u8s and u32s are hashes with .to_le_bytes()
+
+// target cannot be longer than 32 bytes
+//
 pub struct BlockHeader {
-    version: u32,
-    prev_hash: Digest,
-    target: u32,
-    merkle_root: Digest,
-    time: u32,
-    nonce: u64,
+    pub version: u32,
+    pub prev_hash: Digest,
+    pub target: Vec<u8>,
+    pub merkle_root: Digest,
+    pub time: u32,
+    pub nonce: Option<u64>,
+}
+
+impl BlockHeader {
+    pub fn hash(&self, h: &mut Context) {
+            h.update(&self.version.to_le_bytes());
+            h.update(&self.prev_hash.as_ref());
+            h.update(&self.target.as_ref());
+            h.update(&self.merkle_root.as_ref());
+            h.update(&self.time.to_le_bytes());
+    }
+}
+
+
+pub fn pow(b: &mut Block) {
+    let mut d: Digest;
+    let mut nonce: u64 = 0;
+    let target: Vec<u8> = b.header.target.clone();
+    if target.len() >= 33 {
+        panic!("invalid target lenth");
+    }
+    //do while :/
+    while {
+        let mut h = Context::new(&SHA256);
+        b.header.hash(&mut h);
+        h.update(&nonce.to_le_bytes());
+        d = h.finish();
+        nonce += 1;
+        
+        println!("nonce: {}, hash: {:?}", nonce, d);
+        
+        d.as_ref() <= &target
+    } {};
+
+    if d.as_ref() <= &target {
+        b.header.nonce = Some(nonce);       
+    }
 }

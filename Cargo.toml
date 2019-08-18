@@ -1,5 +1,5 @@
 [package]
-name = "test_chain"
+name = "Testchain"
 version = "0.0.1" 
 edition = '2018'
 authors = ["Trent <ghastfilms613@gmail.com>"]
