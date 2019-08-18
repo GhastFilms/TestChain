@@ -65,7 +65,7 @@ pub fn pow(b: &mut Block) {
 }
 
 struct PartialBlock {
-    pub header: Option<BlockHeader>,
+    pub header: Option<PartialBlockHeader>,
     pub transactions: TransactionContainer,
 }
 
@@ -75,6 +75,14 @@ impl PartialBlock {
             header: None,
             transactions: TransactionContainer::new(),
         }
+    }
+
+    pub fn calc_header(&mut self, prev_hash: Digest) {
+
+        let merkle_root = self.transactions.merkle_root();
+        let target = &TARGET;
+
+        self.header = Some(PartialBlockHeader::new(prev_hash, target, merkle_root));
     }
 }
 
@@ -91,7 +99,6 @@ const TARGET: [u8; 32] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-
 impl PartialBlockHeader {
     pub fn new(prev_hash: Digest, target: &[u8], merkle_root: Digest) -> PartialBlockHeader {
         PartialBlockHeader {
@@ -106,10 +113,6 @@ impl PartialBlockHeader {
             merkle_root,
         }
     }
-
-    pub fn 
-
-
 
 }
 
