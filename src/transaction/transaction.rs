@@ -3,6 +3,8 @@ use ring::signature::{Signature, KeyPair, EcdsaKeyPair, UnparsedPublicKey, ED255
 use ring::error::Unspecified;
 use ring::rand;
 
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use super::{Input, Output};
 
 pub struct Transaction {
@@ -10,7 +12,7 @@ pub struct Transaction {
     pub sig: Signature,
     pub inputs: Vec<Input>,
     pub outputs: Vec<Output>,
-    pub lock_time: i64,
+    pub lock_time: u64,
 }
 
 impl Transaction {
@@ -62,7 +64,7 @@ pub struct TransactionBuilder {
     version: u32,
     inputs: Vec<Input>,
     outputs: Vec<Output>,
-    lock_time: Option<i64>,
+    lock_time: Option<u64>,
 }
 
 fn input_compare(fst: &Input, snd: &Input) -> bool {
@@ -207,9 +209,15 @@ impl TransactionBuilder {
     }
 
     pub fn sign(self, k: EcdsaKeyPair) -> Result<Transaction, Error> {
-        
+        let time = {
+            let s = SystemTime::now(); 
+            s.duration_since(UNIX_EPOCH).unwrap().as_secs() 
+            // This MIGHT panic at some point, though i dont think a i64 -> u64 conversion will panic
+        };
+
+
         let version = self.version;
-        let lock_time = chrono::Local::now().timestamp();
+        let lock_time: u64 = time;
 
         // these need to be checked and sorted
         // input checks should verify if the signing key is valid for the inputs
