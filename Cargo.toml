@@ -6,7 +6,3 @@ authors = ["Trent <ghastfilms613@gmail.com>"]
 
 [dependencies]
 ring = "0.16.5"
-#serde_derive = "1.0.98"
-#bincode = "1.1.4"
-#serde = "1.0.98"
-chrono = "0.4.7"
