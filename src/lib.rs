@@ -5,14 +5,15 @@ extern crate ring;
 //extern crate serde_derive;
 
 use ring::{
-    digest::{digest, Digest, SHA256},
+    digest::Digest,
 };
-//use serde::Serialize;
 
 pub mod transaction;
+
 use transaction::TransactionContainer;
 
-const VERSION: u32 = 1; 
+const VERSION: u32 = 1;
+
 
 pub struct Block {
     header: BlockHeader,
@@ -29,4 +30,3 @@ pub struct BlockHeader {
     time: u32,
     nonce: u64,
 }
-
